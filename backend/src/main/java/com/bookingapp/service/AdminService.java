@@ -74,6 +74,40 @@ public class AdminService {
     }
 
     @Transactional
+    public void deleteAppointment(Long appointmentId) {
+        if (!appointmentRepository.existsById(appointmentId)) {
+            throw new ResourceNotFoundException("Appointment", appointmentId);
+        }
+        appointmentRepository.deleteById(appointmentId);
+    }
+
+    public List<com.bookingapp.dto.ServiceResponse> getServicesForUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        return businessRepository.findByEmail(user.getEmail())
+                .map(business -> serviceRepository.findByBusinessId(business.getId()).stream()
+                        .map(s -> com.bookingapp.dto.ServiceResponse.builder()
+                                .id(s.getId())
+                                .name(s.getName())
+                                .description(s.getDescription())
+                                .durationMinutes(s.getDurationMinutes())
+                                .price(s.getPrice())
+                                .businessId(business.getId())
+                                .build())
+                        .collect(Collectors.toList()))
+                .orElse(List.of());
+    }
+
+    @Transactional
+    public void deleteService(Long serviceId) {
+        if (!serviceRepository.existsById(serviceId)) {
+            throw new ResourceNotFoundException("Service", serviceId);
+        }
+        appointmentRepository.deleteAll(appointmentRepository.findByServiceId(serviceId));
+        serviceRepository.deleteById(serviceId);
+    }
+
+    @Transactional
     public void deleteCustomer(Long customerId) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", customerId));

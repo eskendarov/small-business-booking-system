@@ -3,6 +3,7 @@ package com.bookingapp.controller;
 import com.bookingapp.dto.AdminUserResponse;
 import com.bookingapp.dto.AppointmentResponse;
 import com.bookingapp.dto.CustomerSummaryResponse;
+import com.bookingapp.dto.ServiceResponse;
 import com.bookingapp.service.AdminService;
 import com.bookingapp.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,23 @@ public class AdminController {
     @DeleteMapping("/customers/{id}")
     public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
         adminService.deleteCustomer(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/appointments/{id}")
+    public ResponseEntity<Void> deleteAppointment(@PathVariable Long id) {
+        adminService.deleteAppointment(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/users/{id}/services")
+    public ResponseEntity<List<ServiceResponse>> getUserServices(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getServicesForUser(id));
+    }
+
+    @DeleteMapping("/services/{id}")
+    public ResponseEntity<Void> deleteService(@PathVariable Long id) {
+        adminService.deleteService(id);
         return ResponseEntity.noContent().build();
     }
 }
