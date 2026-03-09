@@ -16,6 +16,8 @@ const statusBadge = (status) => {
 export default function SuperAdminPage() {
   const [users, setUsers] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [expandedUser, setExpandedUser] = useState(null);
+  const [userServices, setUserServices] = useState({});
   const [expandedCustomer, setExpandedCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,16 +34,45 @@ export default function SuperAdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Business owners
+  const handleToggleUserServices = async (userId) => {
+    if (expandedUser === userId) { setExpandedUser(null); return; }
+    setExpandedUser(userId);
+    if (!userServices[userId]) {
+      try {
+        const res = await adminApi.getUserServices(userId);
+        setUserServices((prev) => ({ ...prev, [userId]: res.data }));
+      } catch {
+        setError('Failed to load services');
+      }
+    }
+  };
+
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Delete this business owner and all their data?')) return;
     try {
       await adminApi.deleteUser(id);
       setUsers((prev) => prev.filter((u) => u.id !== id));
+      if (expandedUser === id) setExpandedUser(null);
     } catch {
       setError('Failed to delete business owner');
     }
   };
 
+  const handleDeleteService = async (serviceId, userId) => {
+    if (!window.confirm('Delete this service? All its appointments will also be deleted.')) return;
+    try {
+      await adminApi.deleteService(serviceId);
+      setUserServices((prev) => ({
+        ...prev,
+        [userId]: prev[userId].filter((s) => s.id !== serviceId),
+      }));
+    } catch {
+      setError('Failed to delete service');
+    }
+  };
+
+  // Customers
   const handleDeleteCustomer = async (id) => {
     if (!window.confirm('Delete this customer and all their appointments?')) return;
     try {
@@ -50,6 +81,22 @@ export default function SuperAdminPage() {
       if (expandedCustomer === id) setExpandedCustomer(null);
     } catch {
       setError('Failed to delete customer');
+    }
+  };
+
+  const handleDeleteAppointment = async (appointmentId, customerId) => {
+    if (!window.confirm('Delete this appointment?')) return;
+    try {
+      await adminApi.deleteAppointment(appointmentId);
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === customerId
+            ? { ...c, appointments: c.appointments.filter((a) => a.id !== appointmentId) }
+            : c
+        )
+      );
+    } catch {
+      setError('Failed to delete appointment');
     }
   };
 
@@ -99,9 +146,7 @@ export default function SuperAdminPage() {
 
             {/* Panel 1 — Business Owners */}
             <div className="table-card" style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>
-                Business Owners
-              </h2>
+              <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>Business Owners</h2>
               {users.length === 0 ? (
                 <div className="empty-state">No business owners registered.</div>
               ) : (
@@ -118,23 +163,66 @@ export default function SuperAdminPage() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id}>
-                        <td style={{ color: '#9ca3af', fontSize: 12 }}>{u.id}</td>
-                        <td>{u.name}</td>
-                        <td>{u.email}</td>
-                        <td>{u.businessName}</td>
-                        <td style={{ fontSize: 12, color: '#6b7280' }}>
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
-                        </td>
-                        <td>
-                          <button
-                            className="btn-cancel"
-                            onClick={() => handleDeleteUser(u.id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
+                      <React.Fragment key={u.id}>
+                        <tr style={{ cursor: 'pointer' }} onClick={() => handleToggleUserServices(u.id)}>
+                          <td style={{ color: '#9ca3af', fontSize: 12 }}>{u.id}</td>
+                          <td>{u.name}</td>
+                          <td>{u.email}</td>
+                          <td>
+                            <span style={{ color: '#6366f1', fontWeight: 600 }}>
+                              {u.businessName}{' '}
+                              {expandedUser === u.id ? '▲' : '▼'}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: 12, color: '#6b7280' }}>
+                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                          </td>
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <button className="btn-cancel" onClick={() => handleDeleteUser(u.id)}>
+                              Delete Owner
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedUser === u.id && (
+                          <tr>
+                            <td colSpan={6} style={{ padding: '0 16px 12px', background: '#f9fafb' }}>
+                              {!userServices[u.id] ? (
+                                <div style={{ padding: '8px 0', color: '#9ca3af', fontSize: 13 }}>Loading services...</div>
+                              ) : userServices[u.id].length === 0 ? (
+                                <div style={{ padding: '8px 0', color: '#9ca3af', fontSize: 13 }}>No services.</div>
+                              ) : (
+                                <table style={{ width: '100%', fontSize: 13 }}>
+                                  <thead>
+                                    <tr>
+                                      <th>Service</th>
+                                      <th>Duration</th>
+                                      <th>Price</th>
+                                      <th>Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {userServices[u.id].map((s) => (
+                                      <tr key={s.id}>
+                                        <td>{s.name}{s.description && <span style={{ color: '#9ca3af', marginLeft: 6 }}>— {s.description}</span>}</td>
+                                        <td>{s.durationMinutes} min</td>
+                                        <td>${s.price}</td>
+                                        <td>
+                                          <button
+                                            className="btn-cancel"
+                                            onClick={() => handleDeleteService(s.id, u.id)}
+                                          >
+                                            Delete
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -185,11 +273,8 @@ export default function SuperAdminPage() {
                             )}
                           </td>
                           <td onClick={(e) => e.stopPropagation()}>
-                            <button
-                              className="btn-cancel"
-                              onClick={() => handleDeleteCustomer(c.id)}
-                            >
-                              Delete
+                            <button className="btn-cancel" onClick={() => handleDeleteCustomer(c.id)}>
+                              Delete All
                             </button>
                           </td>
                         </tr>
@@ -204,6 +289,7 @@ export default function SuperAdminPage() {
                                     <th>Date</th>
                                     <th>Time</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -214,6 +300,14 @@ export default function SuperAdminPage() {
                                       <td>{a.appointmentDate}</td>
                                       <td>{a.appointmentTime}</td>
                                       <td>{statusBadge(a.status)}</td>
+                                      <td>
+                                        <button
+                                          className="btn-cancel"
+                                          onClick={() => handleDeleteAppointment(a.id, c.id)}
+                                        >
+                                          Delete
+                                        </button>
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
