@@ -2,11 +2,14 @@ package com.bookingapp.config;
 
 import com.bookingapp.model.Business;
 import com.bookingapp.model.Service;
+import com.bookingapp.model.User;
 import com.bookingapp.repository.BusinessRepository;
 import com.bookingapp.repository.ServiceRepository;
+import com.bookingapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,9 +20,20 @@ public class DataInitializer implements ApplicationRunner {
 
     private final BusinessRepository businessRepository;
     private final ServiceRepository serviceRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(ApplicationArguments args) {
+        if (!userRepository.existsByEmail("admin")) {
+            userRepository.save(User.builder()
+                    .name("Super Admin")
+                    .email("admin")
+                    .password(passwordEncoder.encode("admin"))
+                    .role(User.Role.SUPER_ADMIN)
+                    .build());
+        }
+
         if (businessRepository.count() > 0) return;
 
         Business salon = businessRepository.save(Business.builder()

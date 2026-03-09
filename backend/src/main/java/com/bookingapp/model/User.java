@@ -1,7 +1,6 @@
 package com.bookingapp.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +26,6 @@ public class User {
     @NotBlank
     private String name;
 
-    @Email
     @NotBlank
     @Column(unique = true)
     private String email;

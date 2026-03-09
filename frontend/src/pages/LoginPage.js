@@ -16,7 +16,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      navigate(user.role === 'CUSTOMER' ? '/appointments' : '/dashboard');
+      if (user.role === 'SUPER_ADMIN') navigate('/superadmin');
+      else if (user.role === 'ADMIN') navigate('/dashboard');
+      else navigate('/appointments');
     } catch {
       setError('Invalid email or password');
     } finally {
@@ -32,9 +34,9 @@ export default function LoginPage() {
         {error && <div className="error-msg">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email</label>
+            <label>Email / Username</label>
             <input
-              type="email"
+              type="text"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
