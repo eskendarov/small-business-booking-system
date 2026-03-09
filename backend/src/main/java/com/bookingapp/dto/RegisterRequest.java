@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class RegisterRequest {
 
@@ -21,4 +23,8 @@ public class RegisterRequest {
     private String password;
 
     private User.Role role;
+
+    // Required when role = ADMIN
+    private String businessName;
+    private List<ServiceInput> services;
 }

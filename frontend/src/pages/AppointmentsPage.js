@@ -122,6 +122,23 @@ export default function AppointmentsPage() {
   );
 }
 
+function timeSlots() {
+  const slots = [];
+  for (let h = 8; h <= 19; h++) {
+    for (let m of [0, 30]) {
+      if (h === 19 && m === 30) break;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      slots.push({ value: `${hh}:${mm}`, label: `${displayH}:${mm} ${ampm}` });
+    }
+  }
+  return slots;
+}
+
+const TIME_SLOTS = timeSlots();
+
 function BookingModal({ onClose, onBooked }) {
   const [businesses, setBusinesses] = useState([]);
   const [services, setServices] = useState([]);
@@ -222,12 +239,16 @@ function BookingModal({ onClose, onBooked }) {
           </div>
           <div className="form-group">
             <label>Time</label>
-            <input
-              type="time"
+            <select
               value={form.appointmentTime}
               onChange={(e) => setForm({ ...form, appointmentTime: e.target.value })}
               required
-            />
+            >
+              <option value="">Select a time...</option>
+              {TIME_SLOTS.map((slot) => (
+                <option key={slot.value} value={slot.value}>{slot.label}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Notes (optional)</label>
