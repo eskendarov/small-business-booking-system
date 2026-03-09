@@ -76,12 +76,15 @@ public class AppointmentService {
     public List<AppointmentResponse> getAllAppointmentsForUser(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
+        if (user.getRole() == User.Role.SUPER_ADMIN) {
+            return getAllAppointments();
+        }
         if (user.getRole() == User.Role.ADMIN) {
             return businessRepository.findByEmail(userEmail)
                     .map(business -> getAppointmentsByBusiness(business.getId()))
                     .orElse(List.of());
         }
-        return getAllAppointments();
+        return getAppointmentsByUserEmail(userEmail);
     }
 
     public List<AppointmentResponse> getAppointmentsByUserEmail(String email) {
