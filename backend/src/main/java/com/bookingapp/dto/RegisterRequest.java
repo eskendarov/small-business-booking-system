@@ -1,5 +1,6 @@
 package com.bookingapp.dto;
 
+import com.bookingapp.model.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -18,4 +19,6 @@ public class RegisterRequest {
     @NotBlank
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    private User.Role role;
 }

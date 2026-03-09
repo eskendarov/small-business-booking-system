@@ -34,6 +34,11 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAllAppointments());
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<AppointmentResponse>> getMy(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(appointmentService.getAppointmentsByUserEmail(userDetails.getUsername()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<AppointmentResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.getAppointmentById(id));

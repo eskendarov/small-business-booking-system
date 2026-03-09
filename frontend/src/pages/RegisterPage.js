@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api/auth';
 
 export default function RegisterPage() {
+  const [role, setRole] = useState('CUSTOMER');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await authApi.register(form);
+      await authApi.register({ ...form, role });
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Try again.');
@@ -28,8 +29,24 @@ export default function RegisterPage() {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Create account</h1>
-        <p className="subtitle">Sign up to manage your bookings</p>
+        <p className="subtitle">Sign up to get started</p>
         {error && <div className="error-msg">{error}</div>}
+        <div className="role-toggle">
+          <button
+            type="button"
+            className={role === 'CUSTOMER' ? 'active' : ''}
+            onClick={() => setRole('CUSTOMER')}
+          >
+            Customer
+          </button>
+          <button
+            type="button"
+            className={role === 'ADMIN' ? 'active' : ''}
+            onClick={() => setRole('ADMIN')}
+          >
+            Business Owner
+          </button>
+        </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Full name</label>
@@ -66,7 +83,7 @@ export default function RegisterPage() {
             />
           </div>
           <button className="btn-primary" type="submit" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? 'Creating account...' : `Sign up as ${role === 'ADMIN' ? 'Business Owner' : 'Customer'}`}
           </button>
         </form>
         <p className="auth-footer">
