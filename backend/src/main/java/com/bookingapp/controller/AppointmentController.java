@@ -30,8 +30,8 @@ public class AppointmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AppointmentResponse>> getAll() {
-        return ResponseEntity.ok(appointmentService.getAllAppointments());
+    public ResponseEntity<List<AppointmentResponse>> getAll(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(appointmentService.getAllAppointmentsForUser(userDetails.getUsername()));
     }
 
     @GetMapping("/my")

@@ -73,6 +73,17 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<AppointmentResponse> getAllAppointmentsForUser(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
+        if (user.getRole() == User.Role.ADMIN) {
+            return businessRepository.findByEmail(userEmail)
+                    .map(business -> getAppointmentsByBusiness(business.getId()))
+                    .orElse(List.of());
+        }
+        return getAllAppointments();
+    }
+
     public List<AppointmentResponse> getAppointmentsByUserEmail(String email) {
         return customerRepository.findByEmail(email)
                 .map(customer -> appointmentRepository.findByCustomerId(customer.getId()).stream()
