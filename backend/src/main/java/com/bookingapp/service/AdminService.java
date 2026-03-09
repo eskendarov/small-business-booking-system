@@ -7,9 +7,11 @@ import com.bookingapp.exception.ResourceNotFoundException;
 import com.bookingapp.model.Appointment;
 import com.bookingapp.model.Customer;
 import com.bookingapp.model.User;
+import com.bookingapp.dto.ServiceResponse;
 import com.bookingapp.repository.AppointmentRepository;
 import com.bookingapp.repository.BusinessRepository;
 import com.bookingapp.repository.CustomerRepository;
+import com.bookingapp.repository.ServiceRepository;
 import com.bookingapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class AdminService {
     private final BusinessRepository businessRepository;
     private final CustomerRepository customerRepository;
     private final AppointmentRepository appointmentRepository;
+    private final ServiceRepository serviceRepository;
 
     public List<AdminUserResponse> getAdminUsers() {
         return userRepository.findAllByRole(User.Role.ADMIN).stream()
@@ -81,12 +84,12 @@ public class AdminService {
         appointmentRepository.deleteById(appointmentId);
     }
 
-    public List<com.bookingapp.dto.ServiceResponse> getServicesForUser(Long userId) {
+    public List<ServiceResponse> getServicesForUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         return businessRepository.findByEmail(user.getEmail())
                 .map(business -> serviceRepository.findByBusinessId(business.getId()).stream()
-                        .map(s -> com.bookingapp.dto.ServiceResponse.builder()
+                        .map(s -> ServiceResponse.builder()
                                 .id(s.getId())
                                 .name(s.getName())
                                 .description(s.getDescription())
@@ -95,7 +98,7 @@ public class AdminService {
                                 .businessId(business.getId())
                                 .build())
                         .collect(Collectors.toList()))
-                .orElse(List.of());
+                .orElseGet(List::of);
     }
 
     @Transactional
