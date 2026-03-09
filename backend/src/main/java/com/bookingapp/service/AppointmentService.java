@@ -8,10 +8,12 @@ import com.bookingapp.model.Appointment.AppointmentStatus;
 import com.bookingapp.model.Business;
 import com.bookingapp.model.Customer;
 import com.bookingapp.model.Service;
+import com.bookingapp.model.User;
 import com.bookingapp.repository.AppointmentRepository;
 import com.bookingapp.repository.BusinessRepository;
 import com.bookingapp.repository.CustomerRepository;
 import com.bookingapp.repository.ServiceRepository;
+import com.bookingapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,11 +28,20 @@ public class AppointmentService {
     private final CustomerRepository customerRepository;
     private final ServiceRepository serviceRepository;
     private final BusinessRepository businessRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public AppointmentResponse createAppointment(AppointmentRequest request) {
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer", request.getCustomerId()));
+    public AppointmentResponse createAppointmentForUser(AppointmentRequest request, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
+
+        Customer customer = customerRepository.findByEmail(userEmail)
+                .orElseGet(() -> customerRepository.save(
+                        Customer.builder()
+                                .name(user.getName())
+                                .email(userEmail)
+                                .build()
+                ));
 
         Service service = serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Service", request.getServiceId()));
