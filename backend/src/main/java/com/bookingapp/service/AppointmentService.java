@@ -73,6 +73,14 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<AppointmentResponse> getAppointmentsByUserEmail(String email) {
+        return customerRepository.findByEmail(email)
+                .map(customer -> appointmentRepository.findByCustomerId(customer.getId()).stream()
+                        .map(this::toResponse)
+                        .collect(Collectors.toList()))
+                .orElse(List.of());
+    }
+
     public List<AppointmentResponse> getAppointmentsByBusiness(Long businessId) {
         return appointmentRepository.findByBusinessId(businessId).stream()
                 .map(this::toResponse)

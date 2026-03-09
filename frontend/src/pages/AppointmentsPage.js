@@ -13,7 +13,7 @@ export default function AppointmentsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    appointmentsApi.getAll()
+    appointmentsApi.getMy()
       .then((res) => setAppointments(res.data))
       .catch(() => setError('Failed to load appointments'))
       .finally(() => setLoading(false));
@@ -102,14 +102,9 @@ export default function AppointmentsPage() {
                       <td>{statusBadge(a.status)}</td>
                       <td>
                         {a.status === 'PENDING' && (
-                          <>
-                            <button className="btn-confirm" onClick={() => handleStatusUpdate(a.id, 'CONFIRMED')}>
-                              Confirm
-                            </button>
-                            <button className="btn-cancel" onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}>
-                              Cancel
-                            </button>
-                          </>
+                          <button className="btn-cancel" onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}>
+                            Cancel
+                          </button>
                         )}
                       </td>
                     </tr>

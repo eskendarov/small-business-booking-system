@@ -26,11 +26,13 @@ public class AuthService {
             throw new IllegalArgumentException("Email already in use");
         }
 
+        User.Role role = (request.getRole() != null) ? request.getRole() : User.Role.CUSTOMER;
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(User.Role.CUSTOMER)
+                .role(role)
                 .build();
 
         userRepository.save(user);
