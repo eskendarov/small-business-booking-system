@@ -2,255 +2,196 @@
 
 ## Overview
 
-The Small Business Booking System follows a **Layered Architecture** pattern, separating concerns into distinct layers that communicate through well-defined interfaces. This design ensures maintainability, testability, and scalability.
-
-## Architecture Layers
-
-### 1. Controller Layer (Presentation)
-**Responsibility**: Handle HTTP requests and responses
-
-- Receives API requests from the frontend
-- Validates input parameters
-- Delegates business logic to the Service layer
-- Returns JSON responses to the client
-- Located in: `src/main/java/com/bookingapp/controller/`
-
-**Example Controllers**:
-- `BookingController` - Handles appointment booking requests
-- `CustomerController` - Manages customer information
-- `BusinessOwnerController` - Admin operations
-- `ServiceController` - Service management
-
-### 2. Service Layer (Business Logic)
-**Responsibility**: Implement business rules and application logic
-
-- Contains core business logic for bookings, availability, notifications
-- Handles validation and error handling
-- Orchestrates operations across multiple repositories
-- Implements transaction management
-- Located in: `src/main/java/com/bookingapp/service/`
-
-**Example Services**:
-- `BookingService` - Booking creation, validation, cancellation
-- `AvailabilityService` - Time slot management, availability calculation
-- `CustomerService` - Customer data management
-- `NotificationService` - Email/SMS notifications
-
-### 3. Repository Layer (Data Access)
-**Responsibility**: Manage database operations
-
-- Uses Spring Data JPA to interact with PostgreSQL
-- Hibernate ORM handles object-relational mapping
-- Implements CRUD operations for each entity
-- Supports custom queries using @Query annotations
-- Located in: `src/main/java/com/bookingapp/repository/`
-
-**Example Repositories**:
-- `BookingRepository` - Query and persist booking records
-- `CustomerRepository` - Access customer data
-- `ServiceRepository` - Retrieve service information
-- `TimeSlotRepository` - Manage available time slots
-
-### 4. Model/Entity Layer (Data Representation)
-**Responsibility**: Define data structures
-
-- Maps database tables to Java objects
-- Contains entity classes with JPA annotations
-- Defines relationships between entities
-- Located in: `src/main/java/com/bookingapp/model/`
-
-**Core Entities**:
-- `Customer` - Customer information (name, email, phone, address)
-- `BusinessOwner` - Business owner account information
-- `Service` - Services offered (name, duration, price, description)
-- `Booking/Appointment` - Appointment records with status
-- `TimeSlot` - Available time slots for each service
-- `Availability` - Business hours and holidays
-
-### 5. DTO Layer (Data Transfer)
-**Responsibility**: Define objects for API communication
-
-- Separates internal entity structure from API responses
-- Prevents exposing sensitive information
-- Simplifies complex data transformations
-- Located in: `src/main/java/com/bookingapp/dto/`
-
-**Example DTOs**:
-- `BookingRequestDTO` - Data for creating a booking
-- `BookingResponseDTO` - Data returned from booking creation
-- `CustomerDTO` - Customer information for API responses
-
-### 6. Exception Handling Layer
-**Responsibility**: Manage application errors
-
-- Custom exceptions for specific business scenarios
-- Global exception handler using @ControllerAdvice
-- Consistent error response format
-- Located in: `src/main/java/com/bookingapp/exception/`
-
-## Database Schema Overview
-
-### Core Tables
-
-**customers**
-- id (Primary Key)
-- name
-- email
-- phone
-- address
-- created_at
-- updated_at
-
-**business_owners**
-- id (Primary Key)
-- name
-- email
-- phone
-- business_name
-- created_at
-- updated_at
-
-**services**
-- id (Primary Key)
-- business_owner_id (Foreign Key)
-- name
-- description
-- duration_minutes
-- price
-- created_at
-- updated_at
-
-**bookings/appointments**
-- id (Primary Key)
-- customer_id (Foreign Key)
-- service_id (Foreign Key)
-- business_owner_id (Foreign Key)
-- appointment_date
-- appointment_time
-- status (PENDING, CONFIRMED, CANCELLED)
-- created_at
-- updated_at
-
-**time_slots**
-- id (Primary Key)
-- service_id (Foreign Key)
-- date
-- start_time
-- end_time
-- is_available
-- created_at
-- updated_at
-
-**availability**
-- id (Primary Key)
-- business_owner_id (Foreign Key)
-- day_of_week
-- start_time
-- end_time
-- created_at
-- updated_at
-
-## Communication Between Frontend and Backend
-
-### REST API Communication Flow
-
-1. **Frontend (React)** sends HTTP request to Backend (Spring Boot)
-2. **Controller** receives the request and validates input
-3. **Service** processes business logic
-4. **Repository** queries or updates the database via Hibernate
-5. **Database** (PostgreSQL) stores/retrieves data
-6. **Repository** returns data to Service
-7. **Service** returns result to Controller
-8. **Controller** formats response as JSON DTO
-9. **Frontend** receives and displays the response
-
-### API Request/Response Example
-
-**Request** (Create Booking):
-```
-POST /api/bookings
-Content-Type: application/json
-
-{
-  "customerId": 1,
-  "serviceId": 5,
-  "appointmentDate": "2026-03-15",
-  "appointmentTime": "14:00"
-}
-```
-
-**Response** (Success):
-```
-HTTP/1.1 201 Created
-Content-Type: application/json
-
-{
-  "id": 42,
-  "customerId": 1,
-  "serviceId": 5,
-  "appointmentDate": "2026-03-15",
-  "appointmentTime": "14:00",
-  "status": "CONFIRMED",
-  "createdAt": "2026-02-19T10:30:00Z"
-}
-```
-
-## Data Flow Diagram
-```
-Frontend (React)
-    ↓ HTTP Request (JSON)
-Controller (REST Endpoint)
-    ↓ Method Call
-Service (Business Logic)
-    ↓ Method Call
-Repository (Data Access)
-    ↓ SQL Query
-Database (PostgreSQL)
-    ↑ Result Set
-Repository
-    ↑ Entity Objects
-Service
-    ↑ Business Objects
-Controller
-    ↓ Convert to DTO
-Frontend (JSON Response)
-```
-
-## Key Design Patterns
-
-### 1. **Layered Architecture**
-Separates concerns into distinct layers for better maintainability and testability.
-
-### 2. **Repository Pattern**
-Abstracts database operations, making it easy to change data sources without affecting business logic.
-
-### 3. **Service Locator Pattern**
-Services are injected into controllers, enabling loose coupling and easier testing.
-
-### 4. **DTO (Data Transfer Object)**
-Separates internal entity structure from external API contracts.
-
-### 5. **Dependency Injection (Spring)**
-Spring manages object creation and dependencies, reducing boilerplate code.
-
-## Deployment Architecture (Future)
-
-The application can be deployed in a production environment as follows:
-
-- **Frontend**: Deployed to a web server (nginx, Apache) or CDN (AWS CloudFront)
-- **Backend**: Deployed to a Java application server (Tomcat, Docker container)
-- **Database**: Managed PostgreSQL instance (AWS RDS, Google Cloud SQL)
-- **Communication**: HTTPS/REST API for secure client-server communication
-
-## Security Considerations
-
-- **Authentication**: JWT tokens or Spring Security for user authentication
-- **Authorization**: Role-based access control (RBAC) for different user types
-- **Input Validation**: Server-side validation for all API inputs
-- **SQL Injection Prevention**: Use parameterized queries (Spring Data JPA)
-- **CORS**: Configure Cross-Origin Resource Sharing for frontend access
-- **HTTPS**: Enforce HTTPS in production environments
+The Small Business Booking System is a multi-tenant full-stack web application following a **Layered Architecture** pattern. Each business owner (ADMIN) operates in isolation — they see only their own services and appointments. Customers can book across multiple businesses and see all of their appointments in one place.
 
 ---
 
-**Last Updated**: February 2026
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, React Router, Axios |
+| Backend | Java 17, Spring Boot 3.x |
+| Auth | Spring Security + JWT (stateless) |
+| ORM | Hibernate / Spring Data JPA |
+| Database | PostgreSQL 12+ |
+| Build | Maven (backend), npm (frontend) |
+
+---
+
+## Architecture Layers
+
+### 1. Controller Layer — `com.bookingapp.controller`
+
+Handles HTTP requests, validates input, delegates to the service layer, returns JSON.
+
+| Controller | Responsibilities |
+|-----------|-----------------|
+| `AuthController` | Register (with business/services), login |
+| `BusinessController` | List businesses, manage own business's services |
+| `AppointmentController` | Book, list (role-filtered), update status, delete |
+
+### 2. Service Layer — `com.bookingapp.service`
+
+Contains all business logic and transaction management.
+
+| Service | Responsibilities |
+|---------|----------------|
+| `AuthService` | Register user → create Business + Services for ADMIN role; JWT login |
+| `AppointmentService` | Create appointment (auto-creates Customer if needed); role-aware listing |
+
+### 3. Repository Layer — `com.bookingapp.repository`
+
+Spring Data JPA repositories — standard CRUD + custom queries.
+
+| Repository | Key custom methods |
+|-----------|-------------------|
+| `UserRepository` | `findByEmail`, `existsByEmail` |
+| `BusinessRepository` | `findByEmail` (used for multi-tenancy lookup) |
+| `ServiceRepository` | `findByBusinessId` |
+| `CustomerRepository` | `findByEmail`, `findByNameContainingIgnoreCase` |
+| `AppointmentRepository` | `findByCustomerId`, `findByBusinessId`, `findByBusinessIdAndAppointmentDate` |
+| `TimeSlotRepository` | `findByServiceIdAndIsAvailableTrue`, `findByServiceIdAndDate` |
+
+### 4. Model / Entity Layer — `com.bookingapp.model`
+
+JPA entities mapped to PostgreSQL tables.
+
+| Entity | Table | Key fields |
+|--------|-------|-----------|
+| `User` | `users` | id, name, email, password, role |
+| `Business` | `businesses` | id, businessName, ownerName, email |
+| `Service` | `services` | id, name, durationMinutes, price, business_id |
+| `Customer` | `customers` | id, name, email |
+| `Appointment` | `appointments` | id, customer_id, service_id, business_id, date, time, status |
+| `TimeSlot` | `time_slots` | id, service_id, date, startTime, endTime, isAvailable |
+
+### 5. DTO Layer — `com.bookingapp.dto`
+
+Separates internal entities from API contracts.
+
+| DTO | Direction | Purpose |
+|-----|-----------|---------|
+| `RegisterRequest` | IN | name, email, password, role, businessName, services[] |
+| `AuthRequest` | IN | email, password |
+| `AuthResponse` | OUT | token, email, role |
+| `AppointmentRequest` | IN | businessId, serviceId, date, time, notes |
+| `AppointmentResponse` | OUT | full appointment with nested names |
+| `BusinessResponse` | OUT | id, businessName, ownerName, email, phone, address |
+| `ServiceResponse` | OUT | id, name, description, durationMinutes, price, businessId |
+| `ServiceInput` | IN | name, description, durationMinutes, price |
+
+### 6. Exception Handling — `com.bookingapp.exception`
+
+Global `@ControllerAdvice` handler returns consistent JSON error responses.
+
+---
+
+## Multi-Tenancy Design
+
+Business isolation is enforced at the service layer using email as the tenant key:
+
+```
+users.email  ==  businesses.email   (for ADMIN role)
+users.email  ==  customers.email    (for CUSTOMER role, auto-created on first booking)
+```
+
+No FK exists between these tables — the link is logical. This allows the same person to switch roles in future without schema changes.
+
+**Appointment access rules:**
+
+| Role | `GET /appointments` returns |
+|------|-----------------------------|
+| `CUSTOMER` | Use `GET /appointments/my` — own appointments only |
+| `ADMIN` | Appointments for their business only (`businessRepository.findByEmail(userEmail)`) |
+| `SUPER_ADMIN` | All appointments |
+
+---
+
+## Authentication Flow
+
+```
+POST /auth/login
+  → AuthenticationManager validates credentials
+  → JwtUtil.generateToken(email)
+  → Returns { token, email, role }
+
+Every subsequent request:
+  → JwtAuthFilter extracts email from token
+  → Loads UserDetails by email
+  → Sets SecurityContext
+  → Controller uses @AuthenticationPrincipal UserDetails
+```
+
+JWT expiry: **24 hours** (`app.jwt.expiration-ms=86400000`)
+
+---
+
+## Request / Response Flow
+
+```
+React Frontend
+  ↓  HTTP + Authorization: Bearer <token>
+AppointmentController  (validates input, reads @AuthenticationPrincipal)
+  ↓
+AppointmentService     (business logic, role check, auto-create Customer)
+  ↓
+Repositories           (Spring Data JPA)
+  ↓
+PostgreSQL
+  ↑
+AppointmentService     (maps Appointment → AppointmentResponse DTO)
+  ↑
+Controller             (ResponseEntity.ok(dto))
+  ↑
+React Frontend         (renders table / updates state)
+```
+
+---
+
+## Frontend Structure — `frontend/src`
+
+```
+api/
+  apiClient.js        Axios instance with JWT interceptor + 401 redirect
+  auth.js             register, login
+  appointments.js     getAll, getMy, create, updateStatus, delete
+  businesses.js       getAll, getMyBusiness, getServices, addService, deleteService
+
+context/
+  AuthContext.js      user state (email, role, token), login(), logout()
+
+pages/
+  LoginPage.js        Email + password form
+  RegisterPage.js     Role toggle → Customer form OR Business Owner form (business + services)
+  AppointmentsPage.js Customer view — own appointments + booking modal (time select dropdown)
+  DashboardPage.js    Admin view — business info, service management, appointment management
+
+App.js                Role-based routing:
+                        /appointments  → PrivateRoute (any authenticated)
+                        /dashboard     → PrivateRoute (adminOnly — blocks CUSTOMER)
+                        /              → HomeRedirect (CUSTOMER→/appointments, ADMIN→/dashboard)
+```
+
+---
+
+## Database Schema
+
+See [DB_DIAGRAM.md](DB_DIAGRAM.md) for the full dbdiagram.io DBML script.
+
+---
+
+## Security
+
+| Concern | Implementation |
+|---------|---------------|
+| Authentication | Stateless JWT, 24h expiry |
+| Password storage | bcrypt via Spring `PasswordEncoder` |
+| Authorization | Spring Security `@AuthenticationPrincipal` + role checks in service layer |
+| CORS | Configured for `http://localhost:3000` |
+| SQL injection | Prevented by Spring Data JPA parameterized queries |
+| Tenant isolation | Email-based lookup — admins can only access their own business's data |
+
+---
+
+**Last Updated**: March 2026
