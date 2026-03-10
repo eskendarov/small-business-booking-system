@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { appointmentsApi } from '../api/appointments';
 import { businessesApi } from '../api/businesses';
 import Navbar from '../components/Navbar';
+import { useTableFilter } from '../hooks/useTableFilter';
+import {
+  TableControls,
+  SortableTh,
+  STATUS_FILTER_OPTIONS,
+  statusFilterFn,
+} from '../components/TableControls';
 
 const statusBadge = (status) => {
   const cls = {
@@ -36,6 +43,17 @@ export default function AppointmentsPage() {
   const [error, setError]               = useState('');
   const [showModal, setShowModal]       = useState(false);
   const navigate = useNavigate();
+
+  /* ── Search · Filter · Sort ──
+     Search:  business name, service name
+     Filter:  appointment status
+     Sort:    date ↓ (default), business name, service name, status   */
+  const apptFilter = useTableFilter(
+    appointments,
+    ['businessName', 'serviceName'],
+    statusFilterFn,
+    'appointmentDate', 'desc',
+  );
 
   useEffect(() => {
     appointmentsApi.getMy()
@@ -89,39 +107,58 @@ export default function AppointmentsPage() {
                 </button>
               </div>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Business</th>
-                    <th>Service</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.map((a) => (
-                    <tr key={a.id}>
-                      <td>{a.businessName}</td>
-                      <td>{a.serviceName}</td>
-                      <td className="cell-muted">{a.appointmentDate}</td>
-                      <td className="cell-muted">{a.appointmentTime}</td>
-                      <td>{statusBadge(a.status)}</td>
-                      <td>
-                        {a.status === 'PENDING' && (
-                          <button
-                            className="btn-cancel"
-                            onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <>
+                <TableControls
+                  query={apptFilter.query}
+                  onQueryChange={apptFilter.setQuery}
+                  filterValue={apptFilter.filterValue}
+                  onFilterChange={apptFilter.setFilterValue}
+                  filterOptions={STATUS_FILTER_OPTIONS}
+                  filtered={apptFilter.filtered.length}
+                  total={apptFilter.total}
+                  isFiltered={apptFilter.isFiltered}
+                  onClearAll={apptFilter.clearAll}
+                  placeholder="Search by business or service…"
+                />
+
+                {apptFilter.filtered.length === 0 ? (
+                  <div className="empty-filtered">No appointments match your search.</div>
+                ) : (
+                  <table>
+                    <thead>
+                      <tr>
+                        <SortableTh label="Business" sortKey="businessName"   sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                        <SortableTh label="Service"  sortKey="serviceName"    sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                        <SortableTh label="Date"     sortKey="appointmentDate" sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                        <th>Time</th>
+                        <SortableTh label="Status"   sortKey="status"         sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {apptFilter.filtered.map((a) => (
+                        <tr key={a.id}>
+                          <td>{a.businessName}</td>
+                          <td>{a.serviceName}</td>
+                          <td className="cell-muted">{a.appointmentDate}</td>
+                          <td className="cell-muted">{a.appointmentTime}</td>
+                          <td>{statusBadge(a.status)}</td>
+                          <td>
+                            {a.status === 'PENDING' && (
+                              <button
+                                className="btn-cancel"
+                                onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
             )}
           </div>
         )}

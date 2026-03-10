@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { appointmentsApi } from '../api/appointments';
 import { businessesApi } from '../api/businesses';
 import Navbar from '../components/Navbar';
+import { useTableFilter } from '../hooks/useTableFilter';
+import {
+  TableControls,
+  SortableTh,
+  STATUS_FILTER_OPTIONS,
+  statusFilterFn,
+} from '../components/TableControls';
 
 const statusBadge = (status) => {
   const cls = {
@@ -34,6 +41,17 @@ export default function DashboardPage() {
       .catch(() => setError('Failed to load dashboard data'))
       .finally(() => setLoading(false));
   }, []);
+
+  /* ── Appointments: search · filter · sort ──
+     Search:  customer name, service name, notes
+     Filter:  appointment status
+     Sort:    date (default ↓), customer name, service name, status   */
+  const apptFilter = useTableFilter(
+    appointments,
+    ['customerName', 'serviceName', 'notes'],
+    statusFilterFn,
+    'appointmentDate', 'desc',
+  );
 
   const handleStatusUpdate = async (id, status) => {
     try {
@@ -94,7 +112,7 @@ export default function DashboardPage() {
               <p>Owner: {business?.ownerName} · {business?.email}</p>
             </div>
 
-            {/* Stats */}
+            {/* Stats — always reflect full dataset, not filtered view */}
             <div className="stats-grid">
               <div className="stat-card purple">
                 <div className="stat-label">Total</div>
@@ -114,7 +132,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Services panel */}
+            {/* ── Services panel ── */}
             <div className="table-card" style={{ marginBottom: 20 }}>
               <div className="panel-header">
                 <h2 className="panel-title">Services</h2>
@@ -195,63 +213,88 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Appointments panel */}
+            {/* ══════════════════════════════════════════════
+                Appointments panel
+                Search:  customer name · service name · notes
+                Filter:  status (PENDING / CONFIRMED / CANCELLED / COMPLETED)
+                Sort:    date ↓ (default) · customer · service · status
+                ══════════════════════════════════════════════ */}
             <div className="table-card">
               <div className="panel-header">
                 <h2 className="panel-title">Appointments</h2>
               </div>
+
               {appointments.length === 0 ? (
                 <div className="empty-state">No appointments yet.</div>
               ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Service</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {appointments.map((a) => (
-                      <tr key={a.id}>
-                        <td>{a.customerName}</td>
-                        <td>{a.serviceName}</td>
-                        <td className="cell-muted">{a.appointmentDate}</td>
-                        <td className="cell-muted">{a.appointmentTime}</td>
-                        <td>{statusBadge(a.status)}</td>
-                        <td>
-                          {a.status === 'PENDING' && (
-                            <>
-                              <button
-                                className="btn-confirm"
-                                onClick={() => handleStatusUpdate(a.id, 'CONFIRMED')}
-                              >
-                                Confirm
-                              </button>
-                              <button
-                                className="btn-cancel"
-                                onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                          {a.status === 'CONFIRMED' && (
-                            <button
-                              className="btn-confirm"
-                              onClick={() => handleStatusUpdate(a.id, 'COMPLETED')}
-                            >
-                              Complete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <>
+                  <TableControls
+                    query={apptFilter.query}
+                    onQueryChange={apptFilter.setQuery}
+                    filterValue={apptFilter.filterValue}
+                    onFilterChange={apptFilter.setFilterValue}
+                    filterOptions={STATUS_FILTER_OPTIONS}
+                    filtered={apptFilter.filtered.length}
+                    total={apptFilter.total}
+                    isFiltered={apptFilter.isFiltered}
+                    onClearAll={apptFilter.clearAll}
+                    placeholder="Search by customer, service, or notes…"
+                  />
+
+                  {apptFilter.filtered.length === 0 ? (
+                    <div className="empty-filtered">No appointments match your search.</div>
+                  ) : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <SortableTh label="Customer" sortKey="customerName"   sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                          <SortableTh label="Service"  sortKey="serviceName"    sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                          <SortableTh label="Date"     sortKey="appointmentDate" sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                          <th>Time</th>
+                          <SortableTh label="Status"   sortKey="status"         sort={apptFilter.sort} onSort={apptFilter.toggleSort} />
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {apptFilter.filtered.map((a) => (
+                          <tr key={a.id}>
+                            <td>{a.customerName}</td>
+                            <td>{a.serviceName}</td>
+                            <td className="cell-muted">{a.appointmentDate}</td>
+                            <td className="cell-muted">{a.appointmentTime}</td>
+                            <td>{statusBadge(a.status)}</td>
+                            <td>
+                              {a.status === 'PENDING' && (
+                                <>
+                                  <button
+                                    className="btn-confirm"
+                                    onClick={() => handleStatusUpdate(a.id, 'CONFIRMED')}
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    className="btn-cancel"
+                                    onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                              {a.status === 'CONFIRMED' && (
+                                <button
+                                  className="btn-confirm"
+                                  onClick={() => handleStatusUpdate(a.id, 'COMPLETED')}
+                                >
+                                  Complete
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </>
               )}
             </div>
           </>
