@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../api/admin';
+import Navbar from '../components/Navbar';
 
 const statusBadge = (status) => {
   const cls = {
-    PENDING: 'badge badge-pending',
+    PENDING:   'badge badge-pending',
     CONFIRMED: 'badge badge-confirmed',
     CANCELLED: 'badge badge-cancelled',
     COMPLETED: 'badge badge-completed',
@@ -14,15 +13,13 @@ const statusBadge = (status) => {
 };
 
 export default function SuperAdminPage() {
-  const [users, setUsers] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [expandedUser, setExpandedUser] = useState(null);
-  const [userServices, setUserServices] = useState({});
+  const [users, setUsers]             = useState([]);
+  const [customers, setCustomers]     = useState([]);
+  const [expandedUser, setExpandedUser]         = useState(null);
+  const [userServices, setUserServices]         = useState({});
   const [expandedCustomer, setExpandedCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     Promise.all([adminApi.getUsers(), adminApi.getCustomers()])
@@ -34,7 +31,7 @@ export default function SuperAdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Business owners
+  /* ── Business owners ── */
   const handleToggleUserServices = async (userId) => {
     if (expandedUser === userId) { setExpandedUser(null); return; }
     setExpandedUser(userId);
@@ -60,7 +57,7 @@ export default function SuperAdminPage() {
   };
 
   const handleDeleteService = async (serviceId, userId) => {
-    if (!window.confirm('Delete this service? All its appointments will also be deleted.')) return;
+    if (!window.confirm('Delete this service? All its appointments will also be removed.')) return;
     try {
       await adminApi.deleteService(serviceId);
       setUserServices((prev) => ({
@@ -72,7 +69,7 @@ export default function SuperAdminPage() {
     }
   };
 
-  // Customers
+  /* ── Customers ── */
   const handleDeleteCustomer = async (id) => {
     if (!window.confirm('Delete this customer and all their appointments?')) return;
     try {
@@ -100,32 +97,23 @@ export default function SuperAdminPage() {
     }
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); };
-
-  const totalAppointments = customers.reduce((sum, c) => sum + (c.appointments?.length || 0), 0);
+  const totalAppointments = customers.reduce(
+    (sum, c) => sum + (c.appointments?.length || 0), 0
+  );
 
   return (
     <div className="layout">
-      <nav className="navbar">
-        <span className="navbar-brand">BookingApp</span>
-        <div className="navbar-user">
-          <span style={{ background: '#fef3c7', color: '#d97706', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
-            Super Admin
-          </span>
-          <span>{user?.email}</span>
-          <button className="btn-logout" onClick={handleLogout}>Logout</button>
-        </div>
-      </nav>
-
+      <Navbar />
       <div className="main-content">
         {error && <div className="error-msg">{error}</div>}
+
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading">Loading…</div>
         ) : (
           <>
             <div className="page-header">
               <h1>Super Admin Dashboard</h1>
-              <p>Full system overview — manage all business owners and customers</p>
+              <p>Full system overview — manage all business owners, services, and customers</p>
             </div>
 
             {/* Stats */}
@@ -144,9 +132,11 @@ export default function SuperAdminPage() {
               </div>
             </div>
 
-            {/* Panel 1 — Business Owners */}
-            <div className="table-card" style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>Business Owners</h2>
+            {/* ── Business Owners Panel ── */}
+            <div className="table-card" style={{ marginBottom: 20 }}>
+              <div className="panel-header">
+                <h2 className="panel-title">Business Owners</h2>
+              </div>
               {users.length === 0 ? (
                 <div className="empty-state">No business owners registered.</div>
               ) : (
@@ -154,7 +144,7 @@ export default function SuperAdminPage() {
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Owner Name</th>
+                      <th>Owner</th>
                       <th>Email</th>
                       <th>Business</th>
                       <th>Registered</th>
@@ -164,17 +154,22 @@ export default function SuperAdminPage() {
                   <tbody>
                     {users.map((u) => (
                       <React.Fragment key={u.id}>
-                        <tr style={{ cursor: 'pointer' }} onClick={() => handleToggleUserServices(u.id)}>
-                          <td style={{ color: '#9ca3af', fontSize: 12 }}>{u.id}</td>
+                        <tr
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleToggleUserServices(u.id)}
+                        >
+                          <td className="cell-id">{u.id}</td>
                           <td>{u.name}</td>
-                          <td>{u.email}</td>
+                          <td className="cell-muted">{u.email}</td>
                           <td>
-                            <span style={{ color: '#6366f1', fontWeight: 600 }}>
+                            <span className="cell-expand">
                               {u.businessName}{' '}
-                              {expandedUser === u.id ? '▲' : '▼'}
+                              <span style={{ fontSize: 10, opacity: 0.7 }}>
+                                {expandedUser === u.id ? '▲' : '▼'}
+                              </span>
                             </span>
                           </td>
-                          <td style={{ fontSize: 12, color: '#6b7280' }}>
+                          <td className="cell-muted" style={{ fontSize: 12 }}>
                             {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
                           </td>
                           <td onClick={(e) => e.stopPropagation()}>
@@ -183,42 +178,50 @@ export default function SuperAdminPage() {
                             </button>
                           </td>
                         </tr>
+
                         {expandedUser === u.id && (
-                          <tr>
-                            <td colSpan={6} style={{ padding: '0 16px 12px', background: '#f9fafb' }}>
-                              {!userServices[u.id] ? (
-                                <div style={{ padding: '8px 0', color: '#9ca3af', fontSize: 13 }}>Loading services...</div>
-                              ) : userServices[u.id].length === 0 ? (
-                                <div style={{ padding: '8px 0', color: '#9ca3af', fontSize: 13 }}>No services.</div>
-                              ) : (
-                                <table style={{ width: '100%', fontSize: 13 }}>
-                                  <thead>
-                                    <tr>
-                                      <th>Service</th>
-                                      <th>Duration</th>
-                                      <th>Price</th>
-                                      <th>Actions</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {userServices[u.id].map((s) => (
-                                      <tr key={s.id}>
-                                        <td>{s.name}{s.description && <span style={{ color: '#9ca3af', marginLeft: 6 }}>— {s.description}</span>}</td>
-                                        <td>{s.durationMinutes} min</td>
-                                        <td>${s.price}</td>
-                                        <td>
-                                          <button
-                                            className="btn-cancel"
-                                            onClick={() => handleDeleteService(s.id, u.id)}
-                                          >
-                                            Delete
-                                          </button>
-                                        </td>
+                          <tr className="sub-table-row">
+                            <td colSpan={6}>
+                              <div className="sub-table-wrapper">
+                                {!userServices[u.id] ? (
+                                  <div className="sub-table-empty">Loading services…</div>
+                                ) : userServices[u.id].length === 0 ? (
+                                  <div className="sub-table-empty">No services configured.</div>
+                                ) : (
+                                  <table>
+                                    <thead>
+                                      <tr>
+                                        <th>Service</th>
+                                        <th>Duration</th>
+                                        <th>Price</th>
+                                        <th>Actions</th>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              )}
+                                    </thead>
+                                    <tbody>
+                                      {userServices[u.id].map((s) => (
+                                        <tr key={s.id}>
+                                          <td>
+                                            {s.name}
+                                            {s.description && (
+                                              <span className="cell-desc">— {s.description}</span>
+                                            )}
+                                          </td>
+                                          <td className="cell-muted">{s.durationMinutes} min</td>
+                                          <td className="cell-muted">${s.price}</td>
+                                          <td>
+                                            <button
+                                              className="btn-cancel"
+                                              onClick={() => handleDeleteService(s.id, u.id)}
+                                            >
+                                              Delete
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -229,11 +232,11 @@ export default function SuperAdminPage() {
               )}
             </div>
 
-            {/* Panel 2 — Customers + Appointments */}
+            {/* ── Customers Panel ── */}
             <div className="table-card">
-              <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>
-                Customers &amp; Their Appointments
-              </h2>
+              <div className="panel-header">
+                <h2 className="panel-title">Customers &amp; Appointments</h2>
+              </div>
               {customers.length === 0 ? (
                 <div className="empty-state">No customers yet.</div>
               ) : (
@@ -258,60 +261,69 @@ export default function SuperAdminPage() {
                             setExpandedCustomer(expandedCustomer === c.id ? null : c.id)
                           }
                         >
-                          <td style={{ color: '#9ca3af', fontSize: 12 }}>{c.id}</td>
+                          <td className="cell-id">{c.id}</td>
                           <td>{c.name}</td>
-                          <td>{c.email}</td>
-                          <td>{c.phone || '—'}</td>
+                          <td className="cell-muted">{c.email}</td>
+                          <td className="cell-muted">{c.phone || '—'}</td>
                           <td>
                             {c.appointments?.length > 0 ? (
-                              <span style={{ color: '#6366f1', fontWeight: 600 }}>
-                                {c.appointments.length} appointment{c.appointments.length !== 1 ? 's' : ''}{' '}
-                                {expandedCustomer === c.id ? '▲' : '▼'}
+                              <span className="cell-expand">
+                                {c.appointments.length}{' '}
+                                {c.appointments.length === 1 ? 'appointment' : 'appointments'}{' '}
+                                <span style={{ fontSize: 10, opacity: 0.7 }}>
+                                  {expandedCustomer === c.id ? '▲' : '▼'}
+                                </span>
                               </span>
                             ) : (
-                              <span style={{ color: '#9ca3af' }}>None</span>
+                              <span className="cell-muted">None</span>
                             )}
                           </td>
                           <td onClick={(e) => e.stopPropagation()}>
-                            <button className="btn-cancel" onClick={() => handleDeleteCustomer(c.id)}>
+                            <button
+                              className="btn-cancel"
+                              onClick={() => handleDeleteCustomer(c.id)}
+                            >
                               Delete All
                             </button>
                           </td>
                         </tr>
+
                         {expandedCustomer === c.id && c.appointments?.length > 0 && (
-                          <tr>
-                            <td colSpan={6} style={{ padding: '0 16px 12px', background: '#f9fafb' }}>
-                              <table style={{ width: '100%', fontSize: 13 }}>
-                                <thead>
-                                  <tr>
-                                    <th>Business</th>
-                                    <th>Service</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {c.appointments.map((a) => (
-                                    <tr key={a.id}>
-                                      <td>{a.businessName}</td>
-                                      <td>{a.serviceName}</td>
-                                      <td>{a.appointmentDate}</td>
-                                      <td>{a.appointmentTime}</td>
-                                      <td>{statusBadge(a.status)}</td>
-                                      <td>
-                                        <button
-                                          className="btn-cancel"
-                                          onClick={() => handleDeleteAppointment(a.id, c.id)}
-                                        >
-                                          Delete
-                                        </button>
-                                      </td>
+                          <tr className="sub-table-row">
+                            <td colSpan={6}>
+                              <div className="sub-table-wrapper">
+                                <table>
+                                  <thead>
+                                    <tr>
+                                      <th>Business</th>
+                                      <th>Service</th>
+                                      <th>Date</th>
+                                      <th>Time</th>
+                                      <th>Status</th>
+                                      <th>Actions</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                    {c.appointments.map((a) => (
+                                      <tr key={a.id}>
+                                        <td>{a.businessName}</td>
+                                        <td>{a.serviceName}</td>
+                                        <td className="cell-muted">{a.appointmentDate}</td>
+                                        <td className="cell-muted">{a.appointmentTime}</td>
+                                        <td>{statusBadge(a.status)}</td>
+                                        <td>
+                                          <button
+                                            className="btn-cancel"
+                                            onClick={() => handleDeleteAppointment(a.id, c.id)}
+                                          >
+                                            Delete
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
                             </td>
                           </tr>
                         )}

@@ -1,15 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { appointmentsApi } from '../api/appointments';
 import { businessesApi } from '../api/businesses';
+import Navbar from '../components/Navbar';
+
+const statusBadge = (status) => {
+  const cls = {
+    PENDING:   'badge badge-pending',
+    CONFIRMED: 'badge badge-confirmed',
+    CANCELLED: 'badge badge-cancelled',
+    COMPLETED: 'badge badge-completed',
+  }[status] || 'badge';
+  return <span className={cls}>{status}</span>;
+};
+
+function timeSlots() {
+  const slots = [];
+  for (let h = 8; h <= 19; h++) {
+    for (const m of [0, 30]) {
+      if (h === 19 && m === 30) break;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      slots.push({ value: `${hh}:${mm}`, label: `${displayH}:${mm} ${ampm}` });
+    }
+  }
+  return slots;
+}
+const TIME_SLOTS = timeSlots();
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const { user, logout } = useAuth();
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [showModal, setShowModal]       = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,9 +47,7 @@ export default function AppointmentsPage() {
   const handleStatusUpdate = async (id, status) => {
     try {
       const updated = await appointmentsApi.updateStatus(id, status);
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === id ? updated.data : a))
-      );
+      setAppointments((prev) => prev.map((a) => (a.id === id ? updated.data : a)));
     } catch {
       setError('Failed to update status');
     }
@@ -35,54 +58,40 @@ export default function AppointmentsPage() {
     setShowModal(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const statusBadge = (status) => {
-    const cls = {
-      PENDING: 'badge badge-pending',
-      CONFIRMED: 'badge badge-confirmed',
-      CANCELLED: 'badge badge-cancelled',
-      COMPLETED: 'badge badge-completed',
-    }[status] || 'badge';
-    return <span className={cls}>{status}</span>;
-  };
-
   return (
     <div className="layout">
-      <nav className="navbar">
-        <span className="navbar-brand">BookingApp</span>
-        <div className="navbar-user">
-          <span>{user?.email}</span>
-          <button className="btn-logout" onClick={handleLogout}>Logout</button>
-        </div>
-      </nav>
+      <Navbar />
       <div className="main-content">
-        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="page-header page-header--flex">
           <div>
             <h1>Appointments</h1>
-            <p>Manage all upcoming bookings</p>
+            <p>View and manage your upcoming bookings</p>
           </div>
           <button className="btn-book" onClick={() => setShowModal(true)}>
             + Book Appointment
           </button>
         </div>
+
         {error && <div className="error-msg">{error}</div>}
+
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading">Loading appointments…</div>
         ) : (
           <div className="table-card">
             {appointments.length === 0 ? (
               <div className="empty-state">
-                No appointments yet. Click "+ Book Appointment" to get started.
+                No appointments yet.{' '}
+                <button
+                  onClick={() => setShowModal(true)}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-fg)', cursor: 'pointer', fontWeight: 600, fontSize: 'inherit', fontFamily: 'inherit', padding: 0 }}
+                >
+                  Book your first one →
+                </button>
               </div>
             ) : (
               <table>
                 <thead>
                   <tr>
-                    <th>Customer</th>
                     <th>Business</th>
                     <th>Service</th>
                     <th>Date</th>
@@ -94,15 +103,17 @@ export default function AppointmentsPage() {
                 <tbody>
                   {appointments.map((a) => (
                     <tr key={a.id}>
-                      <td>{a.customerName}</td>
                       <td>{a.businessName}</td>
                       <td>{a.serviceName}</td>
-                      <td>{a.appointmentDate}</td>
-                      <td>{a.appointmentTime}</td>
+                      <td className="cell-muted">{a.appointmentDate}</td>
+                      <td className="cell-muted">{a.appointmentTime}</td>
                       <td>{statusBadge(a.status)}</td>
                       <td>
                         {a.status === 'PENDING' && (
-                          <button className="btn-cancel" onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}>
+                          <button
+                            className="btn-cancel"
+                            onClick={() => handleStatusUpdate(a.id, 'CANCELLED')}
+                          >
                             Cancel
                           </button>
                         )}
@@ -115,6 +126,7 @@ export default function AppointmentsPage() {
           </div>
         )}
       </div>
+
       {showModal && (
         <BookingModal onClose={() => setShowModal(false)} onBooked={handleBooked} />
       )}
@@ -122,26 +134,12 @@ export default function AppointmentsPage() {
   );
 }
 
-function timeSlots() {
-  const slots = [];
-  for (let h = 8; h <= 19; h++) {
-    for (let m of [0, 30]) {
-      if (h === 19 && m === 30) break;
-      const hh = String(h).padStart(2, '0');
-      const mm = String(m).padStart(2, '0');
-      const ampm = h < 12 ? 'AM' : 'PM';
-      const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
-      slots.push({ value: `${hh}:${mm}`, label: `${displayH}:${mm} ${ampm}` });
-    }
-  }
-  return slots;
-}
-
-const TIME_SLOTS = timeSlots();
-
 function BookingModal({ onClose, onBooked }) {
-  const [businesses, setBusinesses] = useState([]);
-  const [services, setServices] = useState([]);
+  const [businesses, setBusinesses]       = useState([]);
+  const [services, setServices]           = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
+  const [submitting, setSubmitting]       = useState(false);
+  const [error, setError]                 = useState('');
   const [form, setForm] = useState({
     businessId: '',
     serviceId: '',
@@ -149,9 +147,6 @@ function BookingModal({ onClose, onBooked }) {
     appointmentTime: '',
     notes: '',
   });
-  const [selectedService, setSelectedService] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     businessesApi.getAll().then((res) => setBusinesses(res.data));
@@ -172,8 +167,7 @@ function BookingModal({ onClose, onBooked }) {
   const handleServiceChange = (e) => {
     const serviceId = e.target.value;
     setForm({ ...form, serviceId });
-    const svc = services.find((s) => String(s.id) === serviceId);
-    setSelectedService(svc || null);
+    setSelectedService(services.find((s) => String(s.id) === serviceId) || null);
   };
 
   const handleSubmit = async (e) => {
@@ -182,15 +176,15 @@ function BookingModal({ onClose, onBooked }) {
     setSubmitting(true);
     try {
       const res = await appointmentsApi.create({
-        businessId: Number(form.businessId),
-        serviceId: Number(form.serviceId),
+        businessId:      Number(form.businessId),
+        serviceId:       Number(form.serviceId),
         appointmentDate: form.appointmentDate,
         appointmentTime: form.appointmentTime + ':00',
-        notes: form.notes,
+        notes:           form.notes,
       });
       onBooked(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Booking failed. Try again.');
+      setError(err.response?.data?.message || 'Booking failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -199,7 +193,10 @@ function BookingModal({ onClose, onBooked }) {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal">
         <h2>Book an Appointment</h2>
         {error && <div className="error-msg">{error}</div>}
@@ -207,26 +204,34 @@ function BookingModal({ onClose, onBooked }) {
           <div className="form-group">
             <label>Business</label>
             <select value={form.businessId} onChange={handleBusinessChange} required>
-              <option value="">Select a business...</option>
+              <option value="">Select a business…</option>
               {businesses.map((b) => (
                 <option key={b.id} value={b.id}>{b.businessName}</option>
               ))}
             </select>
           </div>
+
           <div className="form-group">
             <label>Service</label>
-            <select value={form.serviceId} onChange={handleServiceChange} required disabled={!form.businessId}>
-              <option value="">Select a service...</option>
+            <select
+              value={form.serviceId}
+              onChange={handleServiceChange}
+              required
+              disabled={!form.businessId}
+            >
+              <option value="">Select a service…</option>
               {services.map((s) => (
                 <option key={s.id} value={s.id}>{s.name} — ${s.price}</option>
               ))}
             </select>
             {selectedService && (
               <div className="service-info">
-                {selectedService.description} · {selectedService.durationMinutes} min
+                {selectedService.durationMinutes} min
+                {selectedService.description && ` · ${selectedService.description}`}
               </div>
             )}
           </div>
+
           <div className="form-group">
             <label>Date</label>
             <input
@@ -237,6 +242,7 @@ function BookingModal({ onClose, onBooked }) {
               required
             />
           </div>
+
           <div className="form-group">
             <label>Time</label>
             <select
@@ -244,25 +250,29 @@ function BookingModal({ onClose, onBooked }) {
               onChange={(e) => setForm({ ...form, appointmentTime: e.target.value })}
               required
             >
-              <option value="">Select a time...</option>
+              <option value="">Select a time…</option>
               {TIME_SLOTS.map((slot) => (
                 <option key={slot.value} value={slot.value}>{slot.label}</option>
               ))}
             </select>
           </div>
+
           <div className="form-group">
-            <label>Notes (optional)</label>
+            <label>Notes <span style={{ fontWeight: 400, color: 'var(--fg-muted)' }}>(optional)</span></label>
             <input
               type="text"
-              placeholder="Any special requests..."
+              placeholder="Any special requests…"
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </div>
+
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
             <button type="submit" className="btn-primary-flex" disabled={submitting}>
-              {submitting ? 'Booking...' : 'Confirm Booking'}
+              {submitting ? 'Booking…' : 'Confirm Booking'}
             </button>
           </div>
         </form>
