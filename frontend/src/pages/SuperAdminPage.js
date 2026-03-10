@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../api/admin';
 import Navbar from '../components/Navbar';
+import { useTableFilter } from '../hooks/useTableFilter';
+import {
+  TableControls,
+  SortableTh,
+  CUSTOMER_APPT_FILTER_OPTIONS,
+  customerApptFilterFn,
+} from '../components/TableControls';
 
 const statusBadge = (status) => {
   const cls = {
@@ -13,8 +20,8 @@ const statusBadge = (status) => {
 };
 
 export default function SuperAdminPage() {
-  const [users, setUsers]             = useState([]);
-  const [customers, setCustomers]     = useState([]);
+  const [users, setUsers]         = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [expandedUser, setExpandedUser]         = useState(null);
   const [userServices, setUserServices]         = useState({});
   const [expandedCustomer, setExpandedCustomer] = useState(null);
@@ -31,7 +38,23 @@ export default function SuperAdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ── Business owners ── */
+  /* ── Business-owners filter / sort ── */
+  const usersFilter = useTableFilter(
+    users,
+    ['name', 'email', 'businessName'],  // searchable fields
+    null,                               // no custom filter predicate
+    'name', 'asc',                      // default sort
+  );
+
+  /* ── Customers filter / sort ── */
+  const customersFilter = useTableFilter(
+    customers,
+    ['name', 'email', 'phone'],         // searchable fields
+    customerApptFilterFn,               // filter by appointment-status presence
+    'name', 'asc',
+  );
+
+  /* ── Business owner actions ── */
   const handleToggleUserServices = async (userId) => {
     if (expandedUser === userId) { setExpandedUser(null); return; }
     setExpandedUser(userId);
@@ -69,7 +92,7 @@ export default function SuperAdminPage() {
     }
   };
 
-  /* ── Customers ── */
+  /* ── Customer actions ── */
   const handleDeleteCustomer = async (id) => {
     if (!window.confirm('Delete this customer and all their appointments?')) return;
     try {
@@ -89,8 +112,8 @@ export default function SuperAdminPage() {
         prev.map((c) =>
           c.id === customerId
             ? { ...c, appointments: c.appointments.filter((a) => a.id !== appointmentId) }
-            : c
-        )
+            : c,
+        ),
       );
     } catch {
       setError('Failed to delete appointment');
@@ -98,7 +121,7 @@ export default function SuperAdminPage() {
   };
 
   const totalAppointments = customers.reduce(
-    (sum, c) => sum + (c.appointments?.length || 0), 0
+    (sum, c) => sum + (c.appointments?.length ?? 0), 0,
   );
 
   return (
@@ -132,32 +155,49 @@ export default function SuperAdminPage() {
               </div>
             </div>
 
-            {/* ── Business Owners Panel ── */}
+            {/* ══════════════════════════════════════════════
+                Business Owners panel
+                Search: name · business name · email
+                Sort:   name · business name · registered
+                ══════════════════════════════════════════════ */}
             <div className="table-card" style={{ marginBottom: 20 }}>
               <div className="panel-header">
                 <h2 className="panel-title">Business Owners</h2>
               </div>
-              {users.length === 0 ? (
-                <div className="empty-state">No business owners registered.</div>
+
+              <TableControls
+                query={usersFilter.query}
+                onQueryChange={usersFilter.setQuery}
+                filterValue={usersFilter.filterValue}
+                onFilterChange={usersFilter.setFilterValue}
+                filterOptions={null}
+                filtered={usersFilter.filtered.length}
+                total={usersFilter.total}
+                isFiltered={usersFilter.isFiltered}
+                onClearAll={usersFilter.clearAll}
+                placeholder="Search by name, business, or email…"
+              />
+
+              {usersFilter.filtered.length === 0 ? (
+                <div className="empty-filtered">
+                  {usersFilter.isFiltered ? 'No business owners match your search.' : 'No business owners registered.'}
+                </div>
               ) : (
                 <table>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Owner</th>
-                      <th>Email</th>
-                      <th>Business</th>
-                      <th>Registered</th>
+                      <SortableTh label="Owner" sortKey="name"         sort={usersFilter.sort} onSort={usersFilter.toggleSort} />
+                      <SortableTh label="Email" sortKey="email"        sort={usersFilter.sort} onSort={usersFilter.toggleSort} />
+                      <SortableTh label="Business" sortKey="businessName" sort={usersFilter.sort} onSort={usersFilter.toggleSort} />
+                      <SortableTh label="Registered" sortKey="createdAt" sort={usersFilter.sort} onSort={usersFilter.toggleSort} />
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
+                    {usersFilter.filtered.map((u) => (
                       <React.Fragment key={u.id}>
-                        <tr
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => handleToggleUserServices(u.id)}
-                        >
+                        <tr style={{ cursor: 'pointer' }} onClick={() => handleToggleUserServices(u.id)}>
                           <td className="cell-id">{u.id}</td>
                           <td>{u.name}</td>
                           <td className="cell-muted">{u.email}</td>
@@ -232,27 +272,48 @@ export default function SuperAdminPage() {
               )}
             </div>
 
-            {/* ── Customers Panel ── */}
+            {/* ══════════════════════════════════════════════
+                Customers panel
+                Search: name · email · phone
+                Filter: all / has appts / has pending / has confirmed / none
+                Sort:   name · email · appointment count · registered
+                ══════════════════════════════════════════════ */}
             <div className="table-card">
               <div className="panel-header">
                 <h2 className="panel-title">Customers &amp; Appointments</h2>
               </div>
-              {customers.length === 0 ? (
-                <div className="empty-state">No customers yet.</div>
+
+              <TableControls
+                query={customersFilter.query}
+                onQueryChange={customersFilter.setQuery}
+                filterValue={customersFilter.filterValue}
+                onFilterChange={customersFilter.setFilterValue}
+                filterOptions={CUSTOMER_APPT_FILTER_OPTIONS}
+                filtered={customersFilter.filtered.length}
+                total={customersFilter.total}
+                isFiltered={customersFilter.isFiltered}
+                onClearAll={customersFilter.clearAll}
+                placeholder="Search by name, email, or phone…"
+              />
+
+              {customersFilter.filtered.length === 0 ? (
+                <div className="empty-filtered">
+                  {customersFilter.isFiltered ? 'No customers match your search.' : 'No customers yet.'}
+                </div>
               ) : (
                 <table>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th>Appointments</th>
+                      <SortableTh label="Name"         sortKey="name"             sort={customersFilter.sort} onSort={customersFilter.toggleSort} />
+                      <SortableTh label="Email"        sortKey="email"            sort={customersFilter.sort} onSort={customersFilter.toggleSort} />
+                      <SortableTh label="Phone"        sortKey="phone"            sort={customersFilter.sort} onSort={customersFilter.toggleSort} />
+                      <SortableTh label="Appointments" sortKey="appointmentCount" sort={customersFilter.sort} onSort={customersFilter.toggleSort} />
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {customers.map((c) => (
+                    {customersFilter.filtered.map((c) => (
                       <React.Fragment key={c.id}>
                         <tr
                           style={{ cursor: c.appointments?.length ? 'pointer' : 'default' }}
