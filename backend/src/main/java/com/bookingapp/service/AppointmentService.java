@@ -2,6 +2,7 @@ package com.bookingapp.service;
 
 import com.bookingapp.dto.AppointmentRequest;
 import com.bookingapp.dto.AppointmentResponse;
+import com.bookingapp.exception.ForbiddenException;
 import com.bookingapp.exception.ResourceNotFoundException;
 import com.bookingapp.model.Appointment;
 import com.bookingapp.model.Appointment.AppointmentStatus;
@@ -63,12 +64,12 @@ public class AppointmentService {
     }
 
     public AppointmentResponse getAppointmentById(Long id) {
-        return toResponse(appointmentRepository.findById(id)
+        return toResponse(appointmentRepository.findByIdFetching(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment", id)));
     }
 
     public List<AppointmentResponse> getAllAppointments() {
-        return appointmentRepository.findAll().stream()
+        return appointmentRepository.findAllFetching().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -89,32 +90,43 @@ public class AppointmentService {
 
     public List<AppointmentResponse> getAppointmentsByUserEmail(String email) {
         return customerRepository.findByEmail(email)
-                .map(customer -> appointmentRepository.findByCustomerId(customer.getId()).stream()
+                .map(customer -> appointmentRepository.findByCustomerIdFetching(customer.getId()).stream()
                         .map(this::toResponse)
                         .collect(Collectors.toList()))
                 .orElse(List.of());
     }
 
     public List<AppointmentResponse> getAppointmentsByBusiness(Long businessId) {
-        return appointmentRepository.findByBusinessId(businessId).stream()
+        return appointmentRepository.findByBusinessIdFetching(businessId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public AppointmentResponse updateStatus(Long id, AppointmentStatus status) {
-        Appointment appointment = appointmentRepository.findById(id)
+        Appointment appointment = appointmentRepository.findByIdFetching(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
         appointment.setStatus(status);
         return toResponse(appointmentRepository.save(appointment));
     }
 
     @Transactional
-    public void deleteAppointment(Long id) {
-        if (!appointmentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Appointment", id);
+    public void deleteAppointment(Long id, String callerEmail) {
+        Appointment appointment = appointmentRepository.findByIdFetching(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        User caller = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
+
+        boolean isPrivileged = caller.getRole() == User.Role.SUPER_ADMIN
+                || caller.getRole() == User.Role.ADMIN;
+        boolean isOwner = appointment.getCustomer().getEmail().equals(callerEmail);
+
+        if (!isPrivileged && !isOwner) {
+            throw new ForbiddenException("You do not have permission to delete this appointment");
         }
-        appointmentRepository.deleteById(id);
+
+        appointmentRepository.delete(appointment);
     }
 
     private AppointmentResponse toResponse(Appointment a) {
