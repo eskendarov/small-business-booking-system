@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { appointmentsApi } from '../api/appointments';
 import { businessesApi } from '../api/businesses';
 import Navbar from '../components/Navbar';
@@ -42,7 +41,6 @@ export default function AppointmentsPage() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState('');
   const [showModal, setShowModal]       = useState(false);
-  const navigate = useNavigate();
 
   /* ── Search · Filter · Sort ──
      Search:  business name, service name
