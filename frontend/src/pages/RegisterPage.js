@@ -86,7 +86,7 @@ export default function RegisterPage() {
 
       <div className="auth-logo">
         <CalendarIcon />
-        BookingApp
+        Makooka
       </div>
 
       <div className="auth-card" style={{ maxWidth: role === 'ADMIN' ? 540 : 440 }}>

@@ -66,7 +66,7 @@ export default function LoginPage() {
 
       <div className="auth-logo">
         <CalendarIcon />
-        BookingApp
+        Makooka
       </div>
 
       <div className="auth-card">
