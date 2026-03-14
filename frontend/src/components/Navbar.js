@@ -44,13 +44,13 @@ export default function Navbar() {
   const badge = user ? ROLE_BADGE[user.role] : null;
   const initials = user?.name
     ? user.name.trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
+    : user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
     <nav className="navbar">
       <span className="navbar-brand">
         <CalendarIcon />
-        BookingApp
+        Makooka
       </span>
       <div className="navbar-right">
         <button
