@@ -1118,6 +1118,178 @@ textarea:disabled {
 .navbar-user { display: none; }
 .auth-container { display: contents; }
 
+/* ── 18. Responsive ── */
+
+/* ── Tablet (≤ 768px) ── */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 20px 16px;
+  }
+
+  /* Allow tables to scroll horizontally instead of being clipped */
+  .table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stats: 2×2 grid on narrower screens */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Phone (≤ 600px) ── */
+@media (max-width: 600px) {
+  :root {
+    --nav-height: 56px;
+  }
+
+  /* ── Navbar ── */
+  .navbar {
+    padding: 0 12px;
+  }
+  .navbar-right {
+    gap: 6px;
+  }
+  /* Hide email text — avatar tooltip already shows it on tap */
+  .navbar-email {
+    display: none;
+  }
+  .btn-nav-signout {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  /* ── Main content ── */
+  .main-content {
+    padding: 16px 12px;
+  }
+
+  /* ── Page header: stack heading + action button ── */
+  .page-header--flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .page-header--flex .btn-book {
+    width: 100%;
+  }
+
+  /* ── Table: compact cell padding ── */
+  .table-card th,
+  .table-card td {
+    padding: 9px 12px;
+  }
+
+  /* ── Sub-table: reduce deep indent ── */
+  .sub-table-wrapper th {
+    padding: 7px 12px 7px 16px;
+  }
+  .sub-table-wrapper td {
+    padding: 8px 12px 8px 16px;
+  }
+  .sub-table-empty {
+    padding: 10px 16px;
+  }
+
+  /* ── Panel header ── */
+  .panel-header {
+    padding: 12px 14px;
+  }
+
+  /* ── Table controls: stack rows ── */
+  .table-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .tc-left {
+    width: 100%;
+  }
+  .tc-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .tc-search {
+    max-width: none;
+  }
+  .tc-select {
+    flex: 1;
+    max-width: none !important;
+    min-width: 0;
+  }
+
+  /* ── Service add form in Dashboard: reflow to 2-col ── */
+  .svc-add-form {
+    padding: 12px;
+  }
+  .svc-add-grid {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 8px;
+  }
+  /* Name spans full width */
+  .svc-add-grid > input:first-child {
+    grid-column: 1 / -1;
+  }
+  /* Save button spans full width */
+  .svc-add-grid > button {
+    grid-column: 1 / -1;
+  }
+
+  /* ── Service rows in Register: reflow to name-full + fields row ── */
+  .svc-row {
+    grid-template-columns: 1fr 1fr 26px;
+    grid-template-rows: auto auto;
+    gap: 6px;
+  }
+  /* Name input spans the whole first row */
+  .svc-row > input:first-child {
+    grid-column: 1 / 4;
+  }
+  /* Hide column labels — inputs have placeholder text */
+  .svc-row-labels {
+    display: none;
+  }
+
+  /* ── Auth pages ── */
+  .auth-page {
+    padding: 24px 12px;
+  }
+  .auth-card {
+    padding: 20px 16px 18px;
+    border-radius: var(--radius-xl);
+  }
+
+  /* ── Modal: bottom sheet on phones ── */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    padding: 20px 16px 28px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 92vh;
+    max-width: 100%;
+  }
+}
+
+/* ── Very small phone (≤ 400px) ── */
+@media (max-width: 400px) {
+  /* Hide role badge to save space for the sign-out button */
+  .role-badge {
+    display: none;
+  }
+
+  .navbar-brand {
+    font-size: 14px;
+  }
+
+  .auth-card {
+    padding: 16px 12px 14px;
+  }
+}
+
 /* ── 16. Table Controls (search / filter / sort toolbar) ── */
 .table-controls {
   display: flex;
