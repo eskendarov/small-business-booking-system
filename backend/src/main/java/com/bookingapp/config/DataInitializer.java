@@ -9,12 +9,14 @@ import com.bookingapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
 @Component
+@Profile("local")
 @RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
 

@@ -2,6 +2,7 @@ package com.bookingapp.dto;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -25,5 +26,6 @@ public class AppointmentRequest {
     @NotNull
     private LocalTime appointmentTime;
 
+    @Size(max = 500, message = "Notes must not exceed 500 characters")
     private String notes;
 }

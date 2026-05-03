@@ -2,7 +2,7 @@ package com.bookingapp.controller;
 
 import com.bookingapp.dto.AppointmentRequest;
 import com.bookingapp.dto.AppointmentResponse;
-import com.bookingapp.model.Appointment.AppointmentStatus;
+import com.bookingapp.dto.StatusUpdateRequest;
 import com.bookingapp.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,15 +40,18 @@ public class AppointmentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AppointmentResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(appointmentService.getAppointmentById(id));
+    public ResponseEntity<AppointmentResponse> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(appointmentService.getAppointmentById(id, userDetails.getUsername()));
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<AppointmentResponse> updateStatus(
             @PathVariable Long id,
-            @RequestParam AppointmentStatus status) {
-        return ResponseEntity.ok(appointmentService.updateStatus(id, status));
+            @Valid @RequestBody StatusUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(appointmentService.updateStatus(id, request.getStatus(), userDetails.getUsername()));
     }
 
     @DeleteMapping("/{id}")

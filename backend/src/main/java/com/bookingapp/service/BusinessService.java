@@ -6,6 +6,7 @@ import com.bookingapp.dto.ServiceResponse;
 import com.bookingapp.exception.ResourceNotFoundException;
 import com.bookingapp.model.Business;
 import com.bookingapp.model.Service;
+import com.bookingapp.repository.AppointmentRepository;
 import com.bookingapp.repository.BusinessRepository;
 import com.bookingapp.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class BusinessService {
 
     private final BusinessRepository businessRepository;
     private final ServiceRepository serviceRepository;
+    private final AppointmentRepository appointmentRepository;
 
     public List<BusinessResponse> getAllBusinesses() {
         return businessRepository.findAll().stream()
@@ -58,6 +60,7 @@ public class BusinessService {
                 .flatMap(business -> serviceRepository.findById(serviceId)
                         .filter(s -> s.getBusiness().getId().equals(business.getId())))
                 .map(s -> {
+                    appointmentRepository.deleteByServiceId(s.getId());
                     serviceRepository.deleteById(s.getId());
                     return true;
                 })

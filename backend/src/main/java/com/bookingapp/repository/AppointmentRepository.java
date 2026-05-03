@@ -21,6 +21,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByServiceId(Long serviceId);
 
+    void deleteByServiceId(Long serviceId);
+
     @Query("SELECT a FROM Appointment a JOIN FETCH a.customer JOIN FETCH a.service JOIN FETCH a.business WHERE a.id = :id")
     Optional<Appointment> findByIdFetching(@Param("id") Long id);
 
