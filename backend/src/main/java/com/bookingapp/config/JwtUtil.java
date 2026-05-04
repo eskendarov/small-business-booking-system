@@ -38,8 +38,8 @@ public class JwtUtil {
 
     public boolean isTokenValid(String token) {
         try {
-            extractClaims(token);
-            return true;
+            Claims claims = extractClaims(token);
+            return !claims.getExpiration().before(new Date());
         } catch (Exception e) {
             return false;
         }

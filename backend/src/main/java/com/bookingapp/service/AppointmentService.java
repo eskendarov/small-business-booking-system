@@ -63,9 +63,26 @@ public class AppointmentService {
         return toResponse(appointmentRepository.save(appointment));
     }
 
-    public AppointmentResponse getAppointmentById(Long id) {
-        return toResponse(appointmentRepository.findByIdFetching(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id)));
+    public AppointmentResponse getAppointmentById(Long id, String callerEmail) {
+        Appointment appointment = appointmentRepository.findByIdFetching(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        User caller = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
+
+        if (caller.getRole() == User.Role.SUPER_ADMIN) {
+            return toResponse(appointment);
+        }
+        if (caller.getRole() == User.Role.ADMIN) {
+            businessRepository.findByEmail(callerEmail)
+                    .filter(b -> b.getId().equals(appointment.getBusiness().getId()))
+                    .orElseThrow(() -> new ForbiddenException("You can only view appointments for your own business"));
+            return toResponse(appointment);
+        }
+        if (!appointment.getCustomer().getEmail().equals(callerEmail)) {
+            throw new ForbiddenException("You can only view your own appointments");
+        }
+        return toResponse(appointment);
     }
 
     public List<AppointmentResponse> getAllAppointments() {
@@ -103,9 +120,22 @@ public class AppointmentService {
     }
 
     @Transactional
-    public AppointmentResponse updateStatus(Long id, AppointmentStatus status) {
+    public AppointmentResponse updateStatus(Long id, AppointmentStatus status, String callerEmail) {
         Appointment appointment = appointmentRepository.findByIdFetching(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment", id));
+
+        User caller = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
+
+        if (caller.getRole() == User.Role.CUSTOMER) {
+            throw new ForbiddenException("Customers cannot update appointment status");
+        }
+        if (caller.getRole() == User.Role.ADMIN) {
+            businessRepository.findByEmail(callerEmail)
+                    .filter(b -> b.getId().equals(appointment.getBusiness().getId()))
+                    .orElseThrow(() -> new ForbiddenException("You can only update appointments for your own business"));
+        }
+
         appointment.setStatus(status);
         return toResponse(appointmentRepository.save(appointment));
     }
@@ -118,11 +148,15 @@ public class AppointmentService {
         User caller = userRepository.findByEmail(callerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User", 0L));
 
-        boolean isPrivileged = caller.getRole() == User.Role.SUPER_ADMIN
-                || caller.getRole() == User.Role.ADMIN;
         boolean isOwner = appointment.getCustomer().getEmail().equals(callerEmail);
 
-        if (!isPrivileged && !isOwner) {
+        if (caller.getRole() == User.Role.SUPER_ADMIN) {
+            // super admin can delete anything
+        } else if (caller.getRole() == User.Role.ADMIN) {
+            businessRepository.findByEmail(callerEmail)
+                    .filter(b -> b.getId().equals(appointment.getBusiness().getId()))
+                    .orElseThrow(() -> new ForbiddenException("You can only delete appointments from your own business"));
+        } else if (!isOwner) {
             throw new ForbiddenException("You do not have permission to delete this appointment");
         }
 

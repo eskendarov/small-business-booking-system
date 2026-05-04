@@ -10,7 +10,7 @@ export const appointmentsApi = {
   create: (data) => apiClient.post('/appointments', data),
 
   updateStatus: (id, status) =>
-    apiClient.put(`/appointments/${id}/status`, null, { params: { status } }),
+    apiClient.put(`/appointments/${id}/status`, { status }),
 
   delete: (id) => apiClient.delete(`/appointments/${id}`),
 };

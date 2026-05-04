@@ -4,6 +4,7 @@ import com.bookingapp.dto.BusinessResponse;
 import com.bookingapp.dto.ServiceInput;
 import com.bookingapp.dto.ServiceResponse;
 import com.bookingapp.service.BusinessService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +40,7 @@ public class BusinessController {
 
     @PostMapping("/my/services")
     public ResponseEntity<ServiceResponse> addService(
-            @RequestBody ServiceInput input,
+            @Valid @RequestBody ServiceInput input,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(businessService.addService(input, userDetails.getUsername()));

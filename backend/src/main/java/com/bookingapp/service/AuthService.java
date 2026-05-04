@@ -5,6 +5,7 @@ import com.bookingapp.dto.AuthRequest;
 import com.bookingapp.dto.AuthResponse;
 import com.bookingapp.dto.RegisterRequest;
 import com.bookingapp.dto.ServiceInput;
+import com.bookingapp.exception.EmailAlreadyExistsException;
 import com.bookingapp.model.Business;
 import com.bookingapp.model.User;
 import com.bookingapp.repository.BusinessRepository;
@@ -33,7 +34,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new EmailAlreadyExistsException(request.getEmail());
         }
 
         User.Role role = (request.getRole() != null) ? request.getRole() : User.Role.CUSTOMER;
